@@ -105,3 +105,56 @@ dt  %>%
   ) %>%
   kableExtra::kable_styling(latex_options = "hold_position") 
 ```
+
+
+## 被引频次与高被引的关联
+想通过四个象限，
+```{r}
+tibble::tribble(
+  ~x, ~y,      ~text,
+  0L, 0L, "产出低、影响力低",
+  0L, 1L, "产出低、影响力高",
+  1L, 0L, "产出高、影响力低",
+  1L, 1L, "产出高、影响力高"
+  ) %>% 
+  ggplot(aes(x = as.factor(x), y = as.factor(y), label = text)) +
+  geom_text() +
+  labs(x = "科研产出", y = "科研影响力") +
+  theme(axis.text = element_blank())
+
+```
+
+
+
+看数据呢
+```{r, eval=FALSE}
+library(ggthemr)
+ggthemr('dust')
+
+dis_select <- c("工程学", "化学", "计算机科学", "物理学", "数学", "材料科学")
+
+dt %>%  
+  tidyESI::add_discipline_cn(discipline) %>% 
+  dplyr::filter(discipline_cn %in% dis_select) %>%
+  
+  dplyr::filter(between(year_range, 2010, 2020)) %>% 
+  
+  tidyESI::add_high_cited(univ, discipline, source = hcited, 
+                          scope = "each year") %>%
+
+  dplyr::mutate(n_cited_high = coalesce(n_cited_high, 0)) %>% 
+  dplyr::mutate(prop = n_cited_high / n_cited) %>% 
+  
+  ggplot(aes(x = n_paper, y = n_cited)) +
+  geom_point(
+    aes(color = prop), 
+    size = 5
+    ) + 
+  
+  #scale_color_viridis_c() +
+  #scale_color_binned() +
+  #scale_color_distiller(type = "seq", palette = "OrRd", direction = 1) +
+  #scale_color_gradient2(low = "blue", high = "red") +
+  scale_color_continuous() +
+  facet_wrap(vars(discipline_cn), scales = "free")
+```
