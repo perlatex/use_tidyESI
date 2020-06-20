@@ -1,0 +1,180 @@
+# 学院对学科的贡献 {#collegecontr}
+
+
+本章讨论各学院机构对ESI学科的贡献，由于数据库的不同，统计出来的论文数量和被引频次与ESI数据库存在一定的差异。按照ESI的方法，一篇文章若有多个机构，那么这些机构对学科的贡献是对等的。
+
+```{r}
+title %>% arrange(-TC) %>% 
+	dplyr::mutate(discipline = tidyESI::map_issn_to_esi_discipline(SN)) %>% 
+	head(1) %>% 
+	pull(SN)
+```
+这篇文章ESI被收录在物理学学科，然而用JCR期刊列表ISSN映射，是交叉学科，这是因为，
+
+```{r}
+tidyESI::esi_jcr_list %>% filter(ISSN == "2041-1723") 
+```
+
+被归类为跨学科学科(Multidisciplinary field)的Science、Nature与PNAS期刊，会被按照各篇文章的参考文献(reference)与引用文献(citation)，重新为每篇文章单独分类，但每篇文章仍只会被分类到一个学科。
+
+
+```{r}
+t <- title %>% 
+  dplyr::filter(univ == "Sichuan Normal University") %>% 
+  dplyr::select(C1, TC, SN) %>% 
+  dplyr::mutate(discipline = tidyESI::map_issn_to_esi_discipline(SN)) %>% 
+  rowwise() %>% 
+  dplyr::mutate(coll = stringr::str_extract_all(C1, "Sichuan Normal Univ,\\s+([^,]*),") 
+  ) %>% 
+  tidyr::unnest(coll) %>% 
+  dplyr::ungroup()
+```
+
+
+```{r}
+sicnu_contribution_by_college <- t %>% 
+  dplyr::select(discipline, TC, coll) %>% 
+  dplyr::mutate(
+    across(coll, stringr::str_squish)
+  ) %>%
+  dplyr::mutate(coll_name_cn = tidyESI::map_addr_to_college_name(coll)) %>% 
+  dplyr::filter(!is.na(coll_name_cn), !is.na(discipline)) %>% 
+  dplyr::group_by(discipline, coll_name_cn) %>% 
+  dplyr::summarise(
+    n_paper = n(),
+    n_cited = sum(TC),
+    .groups = "drop"
+  ) %>% 
+  dplyr::arrange(-n_cited)  %>% 
+  tidyESI::add_discipline_cn(discipline) %>% 
+  dplyr::relocate(discipline_cn)
+
+#sicnu_contribution_by_college
+```
+
+## 学院对ESI学科被引频次的贡献
+
+
+```{r out.width = '100%', echo = FALSE}
+knitr::include_graphics("sankeyNetwork/sankeyNetwork.pdf")
+```
+
+具体数据：
+
+```{r}
+d_contri <- 
+	sicnu_contribution_by_college %>% 
+	dplyr::select(discipline_cn, coll_name_cn, n_paper, n_cited) %>% 
+
+	dplyr::group_by(discipline_cn) %>% 
+    dplyr::arrange(discipline_cn, -n_cited) %>% 
+	dplyr::mutate(
+	  across(c(n_paper, n_cited), ~scales::percent(./sum(.), accuracy = 0.01), 
+	  	   .names = "{col}_percent")
+	  ) %>% 
+	dplyr::relocate(n_paper_percent, .after = "n_paper")
+#d_contri
+```
+
+
+
+
+
+因篇幅原因，下面只列出部分学科的情况
+
+```{r, results='asis', eval = FALSE}
+dis_select <- c("工程学", "化学", "计算机科学", "物理学", "数学", "材料科学")
+
+d_contri %>% 
+  dplyr::filter(discipline_cn %in% dis_select) %>% 
+  dplyr::rename("学科" = discipline_cn, 
+  			    "学院" = coll_name_cn, 
+  			    "论文数" = n_paper,
+  			    "论文数贡献比" = n_paper_percent,
+  			    "被引频次" = n_cited,
+  			    "被引频次贡献比" = n_cited_percent) %>%  
+  
+  
+  dplyr::group_split(`学科`) %>%
+  purrr::map(~knitr::kable(.x, 
+        caption = glue::glue("各学院对我校{unique(.x$`学科`)}学术影响力贡献"),
+        booktabs = TRUE
+        ) %>%    
+         kable_styling("striped")
+       )
+```
+
+
+
+另外的方法：
+```{r, results='asis', eval=FALSE}
+dis_select <- c("工程学", "化学", "计算机科学", "物理学", "数学", "材料科学")
+
+d_contri %>% 
+  dplyr::filter(discipline_cn %in% dis_select) %>% 
+  dplyr::rename("学科" = discipline_cn, 
+  			    "学院" = coll_name_cn, 
+  			    "论文数" = n_paper,
+  			    "论文数贡献比" = n_paper_percent,
+  			    "被引频次" = n_cited,
+  			    "被引频次贡献比" = n_cited_percent) %>%  
+  
+  
+  dplyr::group_by(`学科`, .drop = FALSE) %>%
+  dplyr::group_map(~knitr::kable(.x, 
+        caption = glue::glue("各学院对我校{.y}学科学术影响力贡献"),
+        booktabs = TRUE
+        ) %>%    
+         kable_styling("striped")
+       )
+
+```
+
+
+这里我们列出各学院对我校**工程学学科**学术影响力贡献的具体数据
+```{r}
+d_contri %>% 
+  dplyr::filter(discipline_cn == "工程学") %>% 
+  dplyr::rename("学科" = discipline_cn, 
+  			    "学院" = coll_name_cn, 
+  			    "论文数" = n_paper,
+  			    "论文数占比" = n_paper_percent,
+  			    "被引频次" = n_cited,
+  			    "被引频次占比" = n_cited_percent) %>%  
+  knitr::kable(
+     caption = "各学院对我校工程学学科学术影响力贡献",
+     booktabs = TRUE
+) %>% 
+  kable_styling(latex_options = "hold_position")
+```
+
+
+## 学院在学科的分配
+
+和学院对学科的贡献不同，这里是以学院分组，看学院输出的文献，都流向了哪些学科？
+可能看问题的角度不同，学科处的领导在乎：**个人服从学院，学院服从学科，学科服从学校**
+
+就是看物理学院有没有全力投入物理学，而是搞了化学？
+
+```{r}
+college_select <- c("物理与电子工程学院", "化学与材料科学学院", "商学院")
+
+sicnu_contribution_by_college %>% 
+	dplyr::filter(coll_name_cn %in% college_select) %>% 
+	dplyr::select(discipline_cn, coll_name_cn, n_paper, n_cited) %>% 
+	dplyr::group_by(coll_name_cn) %>% 
+    dplyr::arrange(coll_name_cn, -n_cited) %>% 
+	dplyr::mutate(
+	  across(c(n_paper, n_cited), ~scales::percent(./sum(.), accuracy = 0.01), 
+	  	   .names = "{col}_percent")
+	  ) %>% 
+    dplyr::relocate(coll_name_cn) %>% 
+	dplyr::relocate(n_paper_percent, .after = "n_paper") %>% 
+   #write.csv("d22.csv")
+
+  knitr::kable(
+     caption = "学院科研产出，都流向了哪些学科",
+     booktabs = TRUE
+) %>% 
+  kable_styling(latex_options = "hold_position")
+```

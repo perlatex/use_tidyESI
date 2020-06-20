@@ -1,0 +1,109 @@
+\cleardoublepage 
+
+# (APPENDIX) 附录 {-}
+
+# 贝叶斯模型参数 {#sound}
+
+## 被引频次为什么是负二项分布
+```{r}
+focus <- c("工程学")
+
+d <- dt %>% 
+    dplyr::filter(between(year_range, 2000, 2019)) %>%
+	tidyESI::add_discipline_cn(discipline) %>% 
+	tidyESI::add_univ_name_cn(univ) %>% 
+	dplyr::filter(discipline_cn %in% focus) %>% 
+	dplyr::select(univ_cn, discipline_cn, year_range, n_paper, n_cited) %>% 
+	tidyr::complete(discipline_cn, year_range) 
+	
+#d
+```
+
+
+
+```{r, fig.width = 6}
+d %>%  
+	filter(between(year_range, 2000, 2019)) %>% 
+	
+	ggplot(aes(x= n_cited)) +
+	geom_density() +
+	labs(
+		title = "科研论文被引频次整体分布",
+		y = NULL)
+```
+
+
+```{r, fig.width = 10, fig.asp= 0.9}
+d %>%  
+	filter(between(year_range, 2000, 2019)) %>% 
+	
+	ggplot(aes(x= n_cited)) +
+	geom_density() +
+	facet_wrap(vars(univ_cn), scales = "free_y", ncol = 5) +
+	labs(
+		title = "各高校科研论文被引频次分布",
+		y = NULL)
+```
+
+
+
+## 后验概率分布
+```{r}
+plot(brms_eng)
+```
+
+
+
+```{r, eval=FALSE}
+fitted_draw <- d_eng %>% add_fitted_draws(brms_eng)
+fitted_draw
+```
+
+
+```{r, eval=FALSE}
+fitted_draw %>%
+  group_by(year) %>%
+  summarise(
+    pred_mean = mean(.value, na.rm = T),
+    Q2.5 = quantile(.value, probs = c(0.025)),
+    Q97.5 = quantile(.value, probs = c(0.975))
+  ) %>% 
+  ggplot(aes(x = year)) +
+  geom_pointrange(
+   aes(y = pred_mean,
+       ymin = Q2.5,
+       ymax = Q97.5),
+    color = "red",  shape = 20
+  ) +
+  geom_point(
+    data = d_eng,
+    aes(y = n_cited), color = "black"
+  )
+```
+
+
+## 后验概率检验
+```{r}
+pp_check(brms_eng, nsamples = 200)
+```
+
+
+
+## ESI 数据完全不透明
+
+5月14日更新的ESI数据库收录论文的时间范围是2010年——2020年2月底（十年零两个月）；
+
+- 我们只能检索到出版年。比如，7月份发布时，
+   - 我们能检索的2010年——2020年7月
+   - ESI数据库收录论文的时间范围是2010年2月——2020年4月
+
+
+- 在ESI检索到的数据，他们还要再筛查一次。
+   - ESI工程学和计算机这两个学科的引用有不少是来自会议论文的，但是ESI不统计来自会议论文的引用，所以实际表现没有您检索出的结果那么高。
+   
+
+- 学科分类也不能完全一致，尤其是交叉学科的。
+
+
+
+

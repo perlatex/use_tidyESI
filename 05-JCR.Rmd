@@ -1,0 +1,51 @@
+# 期刊 {#jcr}
+
+## ESI学科认定的期刊
+也就说，你投这些期刊，才是服从学科了
+
+```{r}
+pick_discipline <- c("Engineering", "Computer Science", "Chemistry")
+colnames(tidyESI::esi_jcr_list)
+```
+
+
+比如物理学科，你投这些期刊，在川师的话你会自摸加一番
+
+```{r}
+tidyESI::esi_jcr_list %>% 
+  janitor::clean_names() %>% 
+  dplyr::mutate(
+    across(category_name, stringr::str_to_title)
+  ) %>% 
+  dplyr::filter(category_name %in% c("Physics")) %>% 
+  dplyr::select(category_name, full_title, issn) %>% 
+
+  head(15) %>%
+  knitr::kable(
+    caption = "优秀的物理期刊",
+    booktabs = TRUE
+  ) %>%
+  kableExtra::kable_styling(latex_options = "hold_position")
+
+```
+
+
+
+
+```{r, eval=FALSE}
+tidyESI::esi_jcr_list %>% 
+  janitor::clean_names() %>% 
+  dplyr::mutate(
+    across(category_name, stringr::str_to_title)
+  ) %>% 
+  dplyr::filter(category_name %in% pick_discipline) %>% 
+  dplyr::select(category_name, full_title, issn) %>% 
+  dplyr::arrange(category_name) %>% 
+  
+  
+  dplyr::group_by(category_name, .drop = FALSE) %>%
+  dplyr::group_walk(
+    ~readr::write_excel_csv(.x, path = glue::glue("{.y}.xlsx"))
+   )
+```
+

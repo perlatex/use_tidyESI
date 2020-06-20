@@ -1,0 +1,107 @@
+# 高被引论文 {#highly}
+
+## 我校学科发展情况
+
+当前四川师范大学在励精图治奋力耕耘，推动学科发展，科研产出稳步提升。
+```{r, eval=FALSE}
+hcited %>% 
+ 	dplyr::filter(univ == "Sichuan Normal University") %>% 
+  dplyr::group_by(year) %>% 
+  dplyr::summarise(
+     n_paper_high = n(),
+     n_cited_high = sum(times_cited)
+  ) 
+```
+
+```{r}
+dt %>%
+  dplyr::filter(univ == "Sichuan Normal University") %>%
+  dplyr::filter(between(year_range, 2010, 2020)) %>%
+  tidyESI::add_high_cited(univ, discipline, source = hcited, scope = "each year") %>%   dplyr::group_by(year_range) %>% 
+  dplyr::summarise(
+    across(starts_with("n_"), sum, na.rm = T)
+  )  %>% 
+  
+
+  dplyr::select(
+    "年份" = year_range, 
+  	"论文数" = n_paper,
+  	"被引频次" = n_cited,
+  	"高被引论文数" = n_paper_high,
+  	"高被引论文被引频次" = n_cited_high
+    ) %>%  
+  knitr::kable(
+     caption = "我校科研发展情况",
+     booktabs = TRUE
+) %>%
+  kable_styling(latex_options = "hold_position") 
+```
+
+从ESI学科来看，我校工程学学科与进入 ESI 学科的阈值线最为接近，接近程度约 106%，有望入选 ESI 学科。
+
+```{r}
+dt %>%
+  dplyr::filter(univ == "Sichuan Normal University") %>%
+  dplyr::filter(between(year_range, 2010, 2020)) %>%
+  dplyr::group_by(univ, discipline) %>%
+  dplyr::summarise(
+    across(starts_with("n_"), sum, na.rm = T),
+    .groups = "drop"
+  ) %>%
+  tidyESI::add_high_cited(univ, discipline, source = hcited, scope = "all year") %>%
+  tidyESI::add_esi_threshold(discipline, date = "last") %>%
+  dplyr::rename(t20200514 = `20200514`) %>%
+  dplyr::mutate(prop = n_cited / t20200514) %>%
+  dplyr::arrange(desc(prop)) %>%
+  dplyr::mutate(prop = scales::percent(prop, accuracy = 0.01)) %>%
+  tidyESI::add_discipline_cn(discipline) %>%
+  dplyr::select(
+    "学科" = discipline_cn,
+    "论文数" = n_paper,
+    "被引频次" = n_cited,
+    "高被引论文数" = n_paper_high,
+    "高被引被引频次" = n_cited_high,
+    "阈值20200514" = t20200514,
+    "接近度" = prop
+  ) %>%
+   knitr::kable(
+     caption = "我校各学科发展情况",
+     booktabs = TRUE
+   ) %>%
+   kable_styling(latex_options = "hold_position")
+```
+
+
+
+
+
+## 高被引贡献比
+```{r}
+dt  %>% 
+  dplyr::filter(between(year_range, 2010, 2020)) %>% 
+  dplyr::group_by(univ, discipline) %>% 
+  dplyr::summarise(
+    across(starts_with("n_"), sum, na.rm = T)
+  ) %>% 
+  dplyr::ungroup() %>% 
+  tidyESI::add_high_cited(
+    univ,
+    discipline, 
+    source = hcited, 
+    scope = "all year"
+  ) %>% 
+  tidyESI::add_esi_threshold(discipline = discipline, date = "last") %>% 
+  tidyESI::add_univ_name_cn(univ) %>% 
+  tidyESI::add_discipline_cn(discipline) %>% 
+  
+  dplyr::mutate(prop = round(n_cited_high/n_cited, 3)) %>% 
+  dplyr::arrange(desc(prop)) %>% 
+  dplyr::select(univ_cn, discipline_cn, n_cited, n_cited_high, prop) %>% 
+  head(10) %>%  
+  
+  knitr::kable(
+    caption = "靠高被引撑起的学科",
+    booktabs = TRUE
+  ) %>%
+  kableExtra::kable_styling(latex_options = "hold_position") 
+```

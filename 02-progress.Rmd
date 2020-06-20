@@ -1,0 +1,155 @@
+# 学科发展 {#progress}
+ 
+## 潜力学科
+
+当前四川师范大学在励精图治奋力耕耘，推动学科发展，其中**工程学**学科与进入ESI学科的阈值线最为接近，接近程度达到97.8%。其他各学科的发展情况见表 \@ref(tab:iris) 。
+
+```{r}
+univ_discip_cum_last_ten_year <- dt %>% 
+    dplyr::filter(between(year_range, 2010, 2020)) %>% # last ten year
+	dplyr::group_by(univ, discipline) %>%
+	dplyr::summarise(
+		cum_paper = sum(n_paper),
+		cum_cited = sum(n_cited)
+	) %>%
+	dplyr::ungroup() %>% 
+	tidyESI::add_is_enter_top(univ, discipline, source = enter) %>% 
+	tidyESI::add_esi_threshold(discipline, date = "last") %>% 
+	tidyESI::add_discipline_cn(discipline) %>% 
+	tidyESI::add_univ_name_cn(univ)
+#univ_discip_cum_last_ten_year
+```
+
+
+
+```{r iris}
+univ_discip_cum_last_ten_year %>%
+  dplyr::filter(univ_cn == "四川师范大学") %>%
+  dplyr::select(discipline_cn, cum_paper, cum_cited, `20200514`) %>%
+  dplyr::mutate(prop = cum_cited / `20200514`) %>%
+  dplyr::arrange(desc(prop)) %>%
+  dplyr::mutate(prop = scales::percent(prop, accuracy = 0.01)) %>%
+  dplyr::select(
+    "学科" = discipline_cn,
+    "累积论文数" = cum_paper,
+    "被引频次" = cum_cited,
+    "阈值线" = `20200514`, "接近程度" = prop
+  ) %>%
+  knitr::kable(
+    caption = "四川师范大学进入22ESI学科接近程度",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+
+## 竞争对手
+
+由表 \@ref(tab:iris)可以看出**工程学**是入选前百分之一ESI学科的 潜力学科，但我们也要意识到，当前师范院校高校中，工程学进入ESI学科的有14所，未进入的16所，表 \@ref(tab:iris3)列出了这未进入的16所高校的工程学科与阈值线的接近程度，可以看到，大学彼此之间竞争还很激烈。
+
+```{r, eval=FALSE}
+univ_discip_cum_last_ten_year %>%
+  filter(discipline_cn %in% "工程学") %>%
+  count(is_enter_top_one_percent)
+```
+
+
+```{r iris2}
+univ_discip_cum_last_ten_year %>%
+  dplyr::filter(discipline_cn %in% "工程学") %>%
+  dplyr::filter(is.na(is_enter_top_one_percent)) %>%
+  dplyr::mutate(prop = cum_cited / `20200514`) %>%
+  dplyr::select(univ_cn, cum_paper, cum_cited, `20200514`, prop) %>%
+  dplyr::arrange(desc(prop)) %>%
+  dplyr::mutate(prop = scales::percent(prop, accuracy = 0.01)) %>%
+  dplyr::select(
+    "学校" = univ_cn,
+    "累积论文数" = cum_paper,
+    "累积被引频次" = cum_cited,
+    "阈值线" = `20200514`,
+    "接近程度" = prop
+  ) %>%
+  knitr::kable(
+    caption = "工程学科有可能进入ESI学科的师范大学",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+
+```{r iris3}
+univ_discip_cum_last_ten_year %>%
+  dplyr::filter(discipline_cn %in% "工程学") %>%
+  dplyr::mutate(prop = cum_cited / `20200514`) %>%
+  dplyr::select(
+    univ_cn, cum_paper, cum_cited, `20200514`,
+    prop, is_enter_top_one_percent
+  ) %>%
+  dplyr::arrange(desc(prop)) %>%
+  dplyr::mutate(prop = scales::percent(prop, accuracy = 0.01)) %>%
+  dplyr::mutate(is_enter = if_else(!is.na(is_enter_top_one_percent), "是", "否")) %>%
+  dplyr::select(
+    "学校" = univ_cn,
+    "累积论文数" = cum_paper,
+    "累积被引频次" = cum_cited,
+    "阈值线" = `20200514`,
+    "接近程度" = prop,
+    "进入ESI" = is_enter
+  ) %>%
+  knitr::kable(
+    caption = "师范类院校的工程学科进入ESI前百分之一学科的情况",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(latex_options = "hold_position")
+```
+## 有效论文数
+
+这里需要使用 
+`tidyESI::add_is_enter_top(univ, discipline, source = enter, .keep = TRUE)`获得有效论文数和有效被引频次. 我认为这是很有价值的一张表
+
+```{r}
+d_eff <- dt %>%
+  dplyr::filter(between(year_range, 2010, 2020)) %>% # last ten year
+  dplyr::group_by(univ, discipline) %>%
+  dplyr::summarise(
+    cum_paper = sum(n_paper),
+    cum_cited = sum(n_cited)
+  ) %>%
+  dplyr::ungroup() %>%
+  tidyESI::add_is_enter_top(univ, discipline, source = enter, .keep = TRUE) %>%
+  tidyESI::add_esi_threshold(discipline, date = "last") %>%
+  tidyESI::add_discipline_cn(discipline) %>%
+  tidyESI::add_univ_name_cn(univ) %>%
+  dplyr::filter(discipline_cn %in% "工程学") %>%
+  dplyr::mutate(prop = cum_cited / `20200514`) %>% 
+
+  dplyr::select(
+    univ_cn, cum_paper, cum_cited, n_paper_eff, n_cited_eff, `20200514`,
+    prop, is_enter_top_one_percent
+  ) %>%
+  dplyr::arrange(desc(prop)) %>%
+  dplyr::mutate(prop = scales::percent(prop, accuracy = 0.01)) %>%
+  dplyr::mutate(is_enter = if_else(!is.na(is_enter_top_one_percent), "是", "否")) 
+
+#d_eff
+```
+
+
+
+```{r}
+d_eff %>% 
+  dplyr::select(
+    "学校" = univ_cn,
+    "累积论文数" = cum_paper,
+    "累积被引频次" = cum_cited,
+    "有效论文数" = n_paper_eff,
+    "有效被引频次" = n_cited_eff,
+    "阈值线" = `20200514`,
+    "接近程度" = prop,
+    "进入ESI" = is_enter ) %>%
+  knitr::kable(
+    caption = "师范类院校的工程学科进入ESI前百分之一学科的情况",
+    booktabs = TRUE
+  ) %>%
+  kableExtra::kable_styling(latex_options = "hold_position")
+```
