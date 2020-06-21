@@ -102,6 +102,8 @@ univ_discip_cum_last_ten_year %>%
   ) %>%
   kable_styling(latex_options = "hold_position")
 ```
+
+
 ## 有效论文数
 
 这里需要使用 
@@ -152,4 +154,47 @@ d_eff %>%
     booktabs = TRUE
   ) %>%
   kableExtra::kable_styling(latex_options = "hold_position")
+```
+
+
+
+## 好看的表格格
+
+```{r}
+d_eff %>% 
+  #head(30) %>% 
+  dplyr::mutate(
+     prop = stringr::str_replace(prop, "%", "\\\\%")  # important
+ ) %>% 
+  dplyr::select(
+    "学校" = univ_cn,
+    "累积论文数" = cum_paper,
+    "累积被引频次" = cum_cited,
+    "有效论文数" = n_paper_eff,
+    "有效被引频次" = n_cited_eff,
+    "阈值线" = `20200514`,
+    "接近程度" = prop,
+    "进入ESI" = is_enter ) %>% 
+  
+  knitr::kable(
+    format = "latex",
+    escape = FALSE,
+    booktabs = TRUE,
+    col.names = linebreak(
+      c(
+        "学校",
+        "累积 \n 论文数",
+        "累积 \n 被引频次",
+        "有效 \n 论文数",
+        "有效 \n 被引频次",
+        "阈值线",
+        "接近程度",
+        "进入 \n ESI" ), 
+      align = "c"
+    ),
+    caption = "师范类院校的工程学科进入ESI前百分之一学科的情况"
+  ) %>%
+  kableExtra::kable_styling(
+      latex_options = "hold_position"
+  )
 ```
