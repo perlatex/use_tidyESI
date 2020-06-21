@@ -67,13 +67,14 @@ d_contri <-
 	dplyr::select(discipline_cn, coll_name_cn, n_paper, n_cited) %>% 
 
 	dplyr::group_by(discipline_cn) %>% 
-    dplyr::arrange(discipline_cn, -n_cited) %>% 
+  dplyr::arrange(discipline_cn, -n_cited) %>% 
 	dplyr::mutate(
 	  across(c(n_paper, n_cited), ~scales::percent(./sum(.), accuracy = 0.01), 
 	  	   .names = "{col}_percent")
 	  ) %>% 
 	dplyr::relocate(n_paper_percent, .after = "n_paper")
-#d_contri
+
+#d_contri %>% write.csv("d_contri.csv")
 ```
 
 
@@ -156,6 +157,27 @@ d_contri %>%
 
 就是看物理学院有没有全力投入物理学，而是搞了化学？
 
+
+
+```{r}
+c_contri <- 
+	sicnu_contribution_by_college %>% 
+	dplyr::select(discipline_cn, coll_name_cn, n_paper, n_cited) %>% 
+
+	dplyr::group_by(coll_name_cn) %>% 
+  dplyr::arrange(coll_name_cn, -n_cited) %>% 
+  dplyr::mutate(
+	  across(c(n_paper, n_cited), ~scales::percent(./sum(.), accuracy = 0.01), 
+	  	   .names = "{col}_percent")
+	  ) %>% 
+  dplyr::relocate(coll_name_cn) %>% 
+	dplyr::relocate(n_paper_percent, .after = "n_paper") 
+
+# c_contri %>% write.csv("c_contri.csv")
+```
+
+
+
 ```{r}
 college_select <- c("物理与电子工程学院", "化学与材料科学学院", "商学院")
 
@@ -163,12 +185,12 @@ sicnu_contribution_by_college %>%
 	dplyr::filter(coll_name_cn %in% college_select) %>% 
 	dplyr::select(discipline_cn, coll_name_cn, n_paper, n_cited) %>% 
 	dplyr::group_by(coll_name_cn) %>% 
-    dplyr::arrange(coll_name_cn, -n_cited) %>% 
+  dplyr::arrange(coll_name_cn, -n_cited) %>% 
 	dplyr::mutate(
 	  across(c(n_paper, n_cited), ~scales::percent(./sum(.), accuracy = 0.01), 
 	  	   .names = "{col}_percent")
 	  ) %>% 
-    dplyr::relocate(coll_name_cn) %>% 
+  dplyr::relocate(coll_name_cn) %>% 
 	dplyr::relocate(n_paper_percent, .after = "n_paper") %>% 
    #write.csv("d22.csv")
 
