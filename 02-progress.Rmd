@@ -198,3 +198,78 @@ d_eff %>%
       latex_options = "hold_position"
   )
 ```
+
+## 虚高成分多大？
+
+可以看已经进入ESI学科的若干高校，n_paper/n_paper_eff
+画个图，看这个比率是多大，然后反推川师的n_paper_eff
+
+```{r}
+d_eff
+```
+```{r}
+d_eff %>% 
+  dplyr::filter(!is.na(n_cited_eff)) %>% 
+  
+  ggplot(aes(x = cum_cited, y = n_cited_eff)) +
+  geom_point() + 
+  geom_text_repel(aes(label = univ_cn)) +
+  geom_smooth(method = lm, se = FALSE)
+```
+这个发现真的有趣，竟然是接近一条直线。
+
+```{r}
+mod <- d_eff %>% 
+  dplyr::filter(!is.na(n_cited_eff)) %>% 
+  lm(n_cited_eff ~ cum_cited, data = .)
+
+broom::tidy(mod)
+```
+
+```{r}
+tbl_pred <- d_eff %>% 
+  dplyr::filter(univ_cn == "四川师范大学") %>% 
+  modelr::add_predictions(data = ., model = mod, var = "n_cited_eff_pred") %>% 
+  dplyr::mutate(prop_pred = n_cited_eff_pred/ `20200514`) %>% 
+  dplyr::mutate(prop_pred = scales::percent(prop_pred, accuracy = 0.01)) %>%
+  dplyr::select(univ_cn, cum_paper, cum_cited, `20200514`, prop, n_cited_eff_pred, prop_pred) %>% 
+  dplyr::rename('学校' = univ_cn,
+         '累计发文' = cum_paper,
+         '累计引文' = cum_cited,
+         '阈值' = `20200514`,
+         '接近程度' = prop,
+         '预测有效引文' = n_cited_eff_pred,
+         '预测接近程度' = prop_pred)
+
+tbl_pred
+```
+
+也就说，四川师范大学工程学科，与阈值的有效接近程度只是`95%`
+
+
+```{r, fig.asp=0.618, fig.width= 6}
+library(ggpmisc)
+univ_focus <- c("北京师范大学", "杭州师范大学", "曲阜师范大学", "浙江师范大学",
+                "南京师范大学", "华南师范大学", "陕西师范大学")
+
+d_eff %>% 
+  dplyr::filter(!is.na(n_cited_eff)) %>% 
+  dplyr::mutate(
+    univ_label = if_else(univ_cn %in% univ_focus, univ_cn, NA_character_) 
+   ) %>% 
+  
+  ggplot(aes(x = cum_cited, y = n_cited_eff)) +
+  geom_point(size = 2) + 
+  geom_text_repel(aes(label = univ_label), size = 3) +
+  geom_smooth(method = lm, se = FALSE) +
+  ggpmisc::geom_table_npc(data = tbl_pred,
+		npcx = 0.01, npcy = 0.9, label = list(tbl_pred),
+		size = 2.8
+		) +
+	theme_classic() 
+
+#ggsave("prop_pred.pdf")
+```
+
+
+
