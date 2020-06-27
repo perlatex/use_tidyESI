@@ -252,6 +252,8 @@ library(ggpmisc)
 univ_focus <- c("北京师范大学", "杭州师范大学", "曲阜师范大学", "浙江师范大学",
                 "南京师范大学", "华南师范大学", "陕西师范大学")
 
+formula <- y ~ x
+
 d_eff %>% 
   dplyr::filter(!is.na(n_cited_eff)) %>% 
   dplyr::mutate(
@@ -261,15 +263,22 @@ d_eff %>%
   ggplot(aes(x = cum_cited, y = n_cited_eff)) +
   geom_point(size = 2) + 
   geom_text_repel(aes(label = univ_label), size = 3) +
-  geom_smooth(method = lm, se = FALSE) +
+  geom_smooth(method = "lm", se = FALSE, formula = formula) +
   ggpmisc::geom_table_npc(data = tbl_pred,
 		npcx = 0.01, npcy = 0.9, label = list(tbl_pred),
 		size = 2.8
 		) +
+   ggpmisc::stat_poly_eq(
+    aes(label = paste(stat(eq.label), stat(adj.rr.label), sep = "*\",  \"*") ),
+    formula = formula, 
+    label.x = 0.9, 
+    label.y = 0.3,
+    parse = TRUE
+    ) +
 	theme_classic() 
 
-#ggsave("prop_pred.pdf")
+ggsave("prop_pred.pdf")
 ```
 
-
+观测到的被引频次打个九折，就是有效被引频次
 
