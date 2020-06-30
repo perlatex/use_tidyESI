@@ -277,8 +277,89 @@ d_eff %>%
     ) +
 	theme_classic() 
 
-ggsave("prop_pred.pdf")
+# ggsave("prop_pred.pdf")
 ```
 
 观测到的被引频次打个九折，就是有效被引频次
 
+
+
+
+
+## 没有哪个师范院校是单独发展了工程学科
+
+我们分析下华中师范大学**工程学科**的学院构成，是分散的？还是集中在某个学院？
+
+
+```{r echo=FALSE}
+title_ccnu <- title %>% dplyr::filter(univ == "Central China Normal University")
+
+t <- title_ccnu %>% 
+  dplyr::select(C1, TC, SN) %>% 
+  dplyr::mutate(discipline = tidyESI::map_issn_to_esi_discipline(SN)) %>% 
+  rowwise() %>% 
+  dplyr::mutate(coll = stringr::str_extract_all(C1, "Cent China Normal Univ,\\s+([^,]*),") 
+  ) %>% 
+  tidyr::unnest(coll) %>% 
+  dplyr::ungroup()
+
+t %>% 
+  dplyr::filter(discipline == "Engineering") %>% 
+  dplyr::group_by(coll) %>% 
+  dplyr::summarise(
+    n_paper = n(),
+    n_cited = sum(TC)
+  ) %>% 
+  dplyr::arrange(desc(n_cited)) %>% 
+  dplyr::rename(
+    "学院" = coll,
+    "论文数" = n_paper,
+    "被引频次" = n_cited
+  ) #%>% 
+  #write_rds("ccnu_engineering.rds")
+
+```
+
+
+
+可以看到，华中师范大学的工程学科是众人拾柴火焰高。同样，我们再看看杭州师范大学的工程学的学院构成，杭州师范大学的工程学科同样是共同作用的结果
+```{r echo=FALSE}
+title_hznu <- title %>% dplyr::filter(univ == "Hangzhou Normal University")
+
+t <- title_hznu %>% 
+  dplyr::select(C1, TC, SN) %>% 
+  dplyr::mutate(discipline = tidyESI::map_issn_to_esi_discipline(SN)) %>% 
+  rowwise() %>% 
+  dplyr::mutate(coll = stringr::str_extract_all(C1, "Hangzhou Normal Univ,\\s+([^,]*),") 
+  ) %>% 
+  tidyr::unnest(coll) %>% 
+  dplyr::ungroup()
+
+t %>% 
+  dplyr::filter(discipline == "Engineering") %>% 
+  dplyr::group_by(coll) %>% 
+  dplyr::summarise(
+    n_paper = n(),
+    n_cited = sum(TC)
+  ) %>% 
+  dplyr::arrange(desc(n_cited)) %>%
+  dplyr::rename(
+    "学院" = coll,
+    "论文数" = n_paper,
+    "被引频次" = n_cited
+  ) #%>% 
+  #write_rds("hznu_engineering.rds")
+
+```
+
+个人服从学院、学院服从学科、学科服从学校，思路挺好，我谈点自己的想法，没有哪个师范院校是单独发展了工程学科，具体来说：
+
+
+- 从师范院校承担的功能和师范院校的学科特点来看，工程学科不是其主业，师范院校不是工科院校，主业还是应该发展数理化，围绕基础研究（理论研究居多，科学实验的少一点，高考的科目），事实上，这也是大多数师范院校的选择。从这一点看，化学学科符合师范类院校的特性。
+
+
+- 从学科的特点来看，学科不是独立发展的，而是协调发展的（先抛开这学科分类的局限）。事实上从结果来看，工程学是学校综合实力提升后，顺带着配套发展出来的，绝不是单独当作**主业**发展。好比烟草企业卷烟技术好、效益好，物流作为配套也就发展很好。但卷烟技术才是烟草公司的主业，物流再好也说副业。换句话说，没有哪个师范院校是单独发展了工程学科。
+
+
+- 从学院的功能来看，或者叫从推进学科发展的角度，化学学科有承载的学院，学校的期望和学院的主业是一致的。而商学院应该对应自己的主业“经济与商业”这个学科。不是不能搞工程，而是主业是“经济与商业”，学生是冲着商学院这个名字去的，是希望学金融商业相关的知识，最后毕业的时候发现搞工程了，找工作就麻烦了。学院服从学科，商学院的主业是搞经济和商业，不能因为一个人或者某几个人搞工程，整个商学院都搞工程。
+ 
