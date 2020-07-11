@@ -85,6 +85,10 @@ options(knitr.kable.NA = '')
 
 Essential Science Indicator（基本科学指标，以下简称ESI）是由世界上著名的学术信息出版机构美国科技信息所（ISI）于2001年推出的一种文献评价分析工具，是基于SCI和SSCI所收录的全球11000多种学术期刊的1000多万条文献记录而建立的计量分析数据库。
 
+```{r}
+what_we_need <- readxl::read_excel("./data/what_we_need.xlsx")
+what_we_need
+```
 
 ## 统计口径 {-}
 

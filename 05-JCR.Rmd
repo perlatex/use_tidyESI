@@ -49,3 +49,45 @@ tidyESI::esi_jcr_list %>%
    )
 ```
 
+
+
+## 影响因子
+
+```{r}
+df <- 
+  readxl::read_excel("./data_JCR/JournalHomeGrid.xlsx", skip = 2) %>% 
+  janitor::clean_names() %>% 
+  dplyr::select(rank, 
+                full_title = full_journal_title, 
+                total_cites, 
+                journal_impact_factor, 
+                eigenfactor_score) %>% 
+  dplyr::filter(!is.na(full_title)) %>% 
+  dplyr::mutate(
+    across(full_title, stringr::str_to_title) 
+  ) 
+  
+
+tb <- tidyESI::esi_jcr_list 
+
+
+
+d <- df %>% dplyr::left_join(tb, by = "full_title") #目的是要知道每个期刊的ESI学科分类
+```
+
+
+
+
+化学学科的期刊列表，包括期刊的影响因子
+```{r}
+Engineering_list <- d %>% 
+  dplyr::filter(discipline == "Engineering") %>% 
+  dplyr::select(discipline, rank, full_title, journal_impact_factor, issn)
+
+Engineering_list %>% 
+  head(5)
+
+#Engineering_list %>% write_rds("engineering_journal_list.rds")
+
+```
+
